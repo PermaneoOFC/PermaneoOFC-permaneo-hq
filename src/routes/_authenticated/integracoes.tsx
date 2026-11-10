@@ -7,6 +7,7 @@ import { RefreshCw } from "lucide-react";
 import { getTrelloStatus, syncTrello } from "@/lib/trello.functions";
 import { syncLogsQuery } from "@/lib/hq";
 import { PageHeader, Panel, Pill, Empty } from "@/components/hq/ui";
+import { TeamAccessPanel } from "@/components/hq/TeamAccessPanel";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/integracoes")({
@@ -43,5 +44,6 @@ function Page() {
           <Button variant="outline" className="mt-4" disabled>Configurar</Button>
         </Panel>))}
     </div>
+    <div className="mt-6"><TeamAccessPanel /></div>
   </>);
 }
