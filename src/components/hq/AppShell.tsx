@@ -42,8 +42,8 @@ export function AppShell() {
   );
   const brand = (
     <Link to="/painel" className="mb-8 flex items-center gap-3 px-2">
-      <span className="flex size-9 items-center justify-center rounded-xl bg-sidebar-primary font-display font-extrabold text-sidebar-primary-foreground">P</span>
-      <span className="leading-tight"><span className="block font-display font-bold text-sidebar-accent-foreground">Permaneo HQ</span><span className="text-xs text-sidebar-foreground/60">Central de Agentes</span></span>
+      <span className="flex size-11 items-center justify-center rounded-xl bg-white/90 p-1.5 shadow-sm"><img src="/permaneo-logo.svg" alt="Símbolo oficial do Permaneo" className="h-full w-full object-contain" /></span>
+      <span className="leading-tight"><span className="block font-display font-bold text-sidebar-accent-foreground">Permaneo HQ</span><span className="text-xs text-sidebar-foreground/60">Escritório virtual · Central de Agentes</span></span>
     </Link>
   );
   return (
