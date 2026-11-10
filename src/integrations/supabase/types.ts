@@ -420,6 +420,8 @@ export type Database = {
     }
     Functions: {
       can_edit: { Args: { _user_id: string }; Returns: boolean }
+      list_team_members: { Args: Record<string, never>; Returns: { user_id: string; email: string; role: string; created_at: string }[] }
+      set_team_member_role: { Args: { target_user_id: string; desired_role: Database["public"]["Enums"]["app_role"] }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
