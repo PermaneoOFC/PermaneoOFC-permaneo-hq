@@ -62,8 +62,9 @@ function AuthPage() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="bg-hero hidden flex-col justify-end p-12 text-primary-foreground lg:flex">
+        <div className="mb-8 flex h-24 w-24 items-center justify-center rounded-3xl bg-white/95 p-4 shadow-xl"><img src="/permaneo-logo.svg" alt="Símbolo oficial do Permaneo" className="h-full w-full object-contain" /></div>
         <h1 className="text-5xl font-extrabold">Permaneo HQ</h1>
-        <p className="mt-3 max-w-md opacity-85">Central de Agentes para o Demo Day.</p>
+        <p className="mt-3 max-w-md opacity-85">Toda trajetória merece continuar. Agora, toda a equipe acompanha o projeto em um só lugar.</p>
       </div>
       <div className="flex items-center justify-center p-6">
         <div className="w-full max-w-sm space-y-6">
