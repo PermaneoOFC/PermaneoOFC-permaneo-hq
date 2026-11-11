@@ -59,6 +59,55 @@ export async function applyApprovedAction(opts: {
   if (!data) throw new ApiError(404, "APPROVAL_NOT_FOUND");
   if (!isAdmin && data.user_id !== actorId) throw new ApiError(403, "OWNER_REQUIRED");
   if (data.status !== "approved") throw new ApiError(409, "APPROVAL_REQUIRED");
+  if (data.service === "github") {
+    if (data.action !== "create_issue") throw new ApiError(400, "EXTERNAL_ACTION_NOT_SUPPORTED");
+    if (process.env["HQ_GITHUB_WRITES_ENABLED"] !== "true" || !process.env["GITHUB_TOKEN"])
+      throw new ApiError(503, "GITHUB_WRITE_NOT_CONFIGURED");
+    let issue: { title: string; body: string };
+    try {
+      issue = z.object({
+        title: z.string().trim().min(5).max(120),
+        body: z.string().trim().min(10).max(1500),
+      }).strict().parse(JSON.parse(data.proposal));
+    } catch { throw new ApiError(400, "INVALID_EXTERNAL_PROPOSAL"); }
+    // Validate repository access with the same token used to write.
+    const base = "https://api.github.com/repos/PermaneoOFC/PermaneoOFC-permaneo-hq";
+    const headers = {
+      Authorization: "Bearer " + process.env["GITHUB_TOKEN"],
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    };
+    const check = await fetch(base, { headers, signal: AbortSignal.timeout(8000) });
+    if (!check.ok) throw new ApiError(503, "GITHUB_REPOSITORY_UNAVAILABLE");
+    const repo = await check.json() as { full_name?: string };
+    if (repo.full_name !== "PermaneoOFC/PermaneoOFC-permaneo-hq")
+      throw new ApiError(403, "WRONG_GITHUB_REPOSITORY");
+    const { data: claim, error: claimError } = await admin.from("external_action_executions")
+      .insert({ approval_id: id, service: "github", action: "create_issue", status: "started" })
+      .select("id").maybeSingle();
+    if (claimError?.message.includes("duplicate key")) throw new ApiError(409, "ACTION_ALREADY_ATTEMPTED");
+    checkDatabase(claimError);
+    if (!claim) throw new ApiError(409, "ACTION_ALREADY_ATTEMPTED");
+    try {
+      const response = await fetch(base + "/issues", {
+        method: "POST", headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(issue), signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok) throw new ApiError(502, "GITHUB_ISSUE_CREATION_FAILED");
+      const result = await response.json() as { html_url?: string; number?: number };
+      const { error: logError } = await admin.from("external_action_executions").update({
+        status: "completed", result_url: result.html_url ?? null, finished_at: new Date().toISOString(),
+      }).eq("id", claim.id);
+      checkDatabase(logError);
+      return { executed: true, service: "github", action: "create_issue", resultUrl: result.html_url };
+    } catch (cause) {
+      await admin.from("external_action_executions").update({
+        status: "failed", error_code: cause instanceof ApiError ? cause.code : "GITHUB_REQUEST_FAILED",
+        finished_at: new Date().toISOString(),
+      }).eq("id", claim.id);
+      throw cause;
+    }
+  }
   if (data.service === "google_drive") {
     if (data.action !== "create_doc") throw new ApiError(400, "EXTERNAL_ACTION_NOT_SUPPORTED");
     let proposal: { title: string; content: string };
