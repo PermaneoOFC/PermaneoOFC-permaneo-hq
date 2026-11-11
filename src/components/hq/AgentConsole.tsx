@@ -154,7 +154,8 @@ function AuthenticatedConsole({ slug }: { slug: string }) {
         "approvals/" + approvalId + "/apply", {},
       );
       setError(result.executed
-        ? result.service === "google_drive"
+        ? result.service === "github" ? "Issue criada no GitHub: " + (result.resultUrl ?? "confira o repositório")
+        : result.service === "google_drive"
           ? "Documento criado no Google Drive: " + (result.resultUrl ?? "confira os documentos do HQ")
           : "Ação aplicada no Trello. Consulte o quadro oficial."
         : "ACTION_NOT_EXECUTED");
@@ -302,7 +303,13 @@ function AuthenticatedConsole({ slug }: { slug: string }) {
                       Criar documento aprovado no Google Drive
                     </Button>
                   )}
-                {approval.status === "approved" && !["trello", "google_drive"].includes(approval.service) &&
+                {approval.status === "approved" && approval.service === "github" &&
+                  approval.action === "create_issue" && owns && canEdit && (
+                    <Button size="sm" variant="outline" onClick={() => void applyExternal(approval.id)}>
+                      Criar issue aprovada no GitHub
+                    </Button>
+                  )}
+                {approval.status === "approved" && !["trello", "google_drive", "github"].includes(approval.service) &&
                   <p className="text-xs text-muted-foreground">Esta integração ainda exige autorização externa; aprovação apenas registra a decisão.</p>}
 
                 {approval.status === "pending" &&
