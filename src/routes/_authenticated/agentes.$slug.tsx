@@ -5,6 +5,7 @@ import { agentsQuery, requestsQuery, ROOMS, REQUEST_STATUS_LABEL } from "@/lib/h
 import { PageHeader, Panel, AgentAvatar, StatusPill, Empty, Pill } from "@/components/hq/ui";
 import { RequestDialog } from "@/components/hq/RequestDialog";
 import { Button } from "@/components/ui/button";
+import { AgentStudio } from "@/components/hq/AgentStudio";
 
 export const Route = createFileRoute("/_authenticated/agentes/$slug")({
   head: () => ({ meta: [{ title: "Perfil do agente — Permaneo HQ" }, { name: "description", content: "Perfil, fila e histórico do agente." }, { property: "og:title", content: "Perfil do agente — Permaneo HQ" }, { property: "og:description", content: "Perfil, fila e histórico do agente." }] }),
@@ -23,6 +24,7 @@ function Page() {
   return (<>
     <PageHeader eyebrow={ROOMS[a.room]?.label} title={a.name} description={a.description}
       actions={<><RequestDialog agent={a} /><Button variant="outline" disabled title="Backend de IA não configurado"><Bot /> Executar agente</Button></>} />
+    <AgentStudio agent={a} />
     <div className="grid gap-6 lg:grid-cols-3">
       <Panel title="Perfil"><div className="flex items-center gap-4"><AgentAvatar agent={a} size="lg" /><div><p className="font-medium">{a.role_title}</p><StatusPill status={a.status} /></div></div>
         <h3 className="mb-2 mt-5 text-sm font-semibold">Atribuições</h3><ul className="list-disc space-y-1 pl-5 text-sm">{a.responsibilities.map((r) => <li key={r}>{r}</li>)}</ul>
