@@ -4,7 +4,7 @@
 - **Supabase**: contas e histórico reais; o modelo só cria registros internos se a ferramenta correspondente for autorizada no catálogo.
 - **Trello**: 40 cards espelhados no Supabase; o motor lê o espelho. Sincronização live exige `TRELLO_API_KEY`, `TRELLO_TOKEN` e `HQ_TRELLO_ENABLED=true`.
 - **Trello (ações)**: execução de comentários, criação de checklists e mudança de lista somente quando uma proposta estruturada for explicitamente **aprovada** e alguém clicar **Executar no Trello**. Além da chave e token, requer `HQ_TRELLO_WRITES_ENABLED=true`. Não existe exclusão/arquivamento automático.
-- **Google Drive**: documentos existentes indexados por links. O Documentarista pode criar registros no banco interno, sem modificar arquivos do Google. Edição remota depende de uma conexão OAuth específica, ainda não implantada.
+- **Google Drive**: documentos existentes indexados por links. O Documentarista pode criar registros internos. OAuth com PKCE e criptografia foi implementado, mas ainda requer configuração do Google Cloud e consentimento do usuário. Depois do OAuth, propostas aprovadas podem criar novos Google Docs; arquivos antigos não são automaticamente autorizados.
 - **GitHub / Vercel**: atalhos e propostas; nenhuma execução externa automática.
 
 ## Automações internas
@@ -30,5 +30,14 @@ A ferramenta `propose_action` gera uma proposta, e não escreve no Trello. Os ti
 
 O executor recusa propostas incompletas, outras ações, recursos fora do quadro e execuções duplicadas. O modelo tem acesso a IDs dos cards espelhados via `task_board`; nunca deve inventar IDs.
 
-## Google Drive — dependência pendente
-A conexão do Google Drive **no ChatGPT** não fornece tokens à aplicação Vercel. Para criar/editar Google Docs pelo HQ será necessária configuração OAuth em um projeto Google Cloud, autorização do usuário e escopos minimizados. Até existir isso, o HQ mostra os links existentes e registros internos sem alegar que alterou arquivos externos.
+## Google Drive — como ativar OAuth com permissão limitada
+A conexão do Google Drive **no ChatGPT** não fornece tokens à aplicação Vercel. O fluxo de autorização seguro já está codado, mas o usuário deve criar credenciais próprias do Google Cloud.
+
+1. No Google Cloud Console, crie um projeto e habilite **Google Drive API** e **Google Docs API**.
+2. Configure a tela de consentimento OAuth e crie um cliente OAuth do tipo **Web application**. Em teste, adicione a conta Google autorizada à lista de usuários de teste.
+3. Registre a URL de redirecionamento exata do app: `https://permaneo-hq-git-backend-ativacao-supabase-permaneo.vercel.app/api/google/callback`. Ela precisa corresponder a `GOOGLE_REDIRECT_URI`.
+4. Salve na Vercel, somente na Preview da branch `backend/ativacao-supabase`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` e `GOOGLE_TOKEN_ENCRYPTION_KEY` (32 bytes aleatórios codificados em base64). Os segredos nunca devem ser expostos ao navegador.
+5. Faça redeploy, acesse Integrações e clique **Autorizar meu Google Drive**. Cada usuário concede permissão para sua conta. O token de refresh fica criptografado no Supabase.
+6. Depois da conexão, um agente pode propor `service=google_drive`, `action=create_doc`, com `proposal` JSON `{"title":"Título","content":"Conteúdo"}`. O solicitante aprova, então clica **Criar documento aprovado**. A ação cria um novo documento no Drive do proprietário, sem exclusões automáticas.
+
+**Limitação importante:** `drive.file` autoriza apenas arquivos criados ou abertos pelo aplicativo. Documentos antigos que já estão indexados no HQ não podem ser editados automaticamente. Para isso seria necessário selecioná-los e conceder acesso explícito (por exemplo, com Google Picker), funcionalidade ainda não adicionada. Não conceder escopo amplo de Drive sem revisão de segurança.
