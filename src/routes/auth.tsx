@@ -139,7 +139,7 @@ function AuthPage() {
             <button type="button" className="text-sm text-primary underline-offset-4 hover:underline" onClick={() => setMode("up")}>Não tem conta? Criar conta</button>
           </div>}
           {mode === "up" && <button type="button" className="text-sm text-primary underline-offset-4 hover:underline" onClick={() => setMode("in")}>Já tem conta? Entrar</button>}
-          {mode === "reset" && <button type="button" className="text-sm text-primary underline-offset-4 hover:underline" onClick={() => setMode("in")}>Voltar para o login</button>
+          {mode === "reset" && <button type="button" className="text-sm text-primary underline-offset-4 hover:underline" onClick={() => setMode("in")}>Voltar para o login</button>}
         </div>
       </div>
     </div>
