@@ -58,13 +58,19 @@ export async function statuses(userId: string) {
   checkDatabase(google.error);
   const googleConfigured = Boolean(process.env["GOOGLE_CLIENT_ID"] && process.env["GOOGLE_CLIENT_SECRET"] && process.env["GOOGLE_REDIRECT_URI"] && process.env["GOOGLE_TOKEN_ENCRYPTION_KEY"]);
   const trelloConfigured = process.env["HQ_TRELLO_ENABLED"] === "true" && Boolean(process.env["TRELLO_API_KEY"] && process.env["TRELLO_TOKEN"]);
+  const trelloCheck = trelloConfigured ? await readJson(
+    "https://api.trello.com/1/boards/IfYN7SWi?fields=id,name&" + new URLSearchParams({
+      key: process.env["TRELLO_API_KEY"]!, token: process.env["TRELLO_TOKEN"]!,
+    }), {},
+  ) : null;
+  const trelloReady = Boolean(trelloCheck && trelloCheck.id === "6af31f42347314fd0f6e04dd");
   const linkedInReady = false; // App access to LinkedIn is NOT transferred from ChatGPT, and no OAuth credentials are configured.
   const list: Check[] = [
-    {service:"trello", ready:trelloConfigured, access:trelloConfigured ? "board_sync" : "mirror_only", detail:trelloConfigured ? "Sincronização autorizada; alterações exigem aprovação" : "TRELLO_API_KEY, TRELLO_TOKEN e HQ_TRELLO_ENABLED"},
+    {service:"trello", ready:trelloReady, access:trelloReady ? "board_sync" : "mirror_only", detail:trelloReady ? "Leitura ao vivo do quadro oficial validada; alterações exigem aprovação" : trelloConfigured ? "Credenciais configuradas, mas não foi possível validar o quadro" : "TRELLO_API_KEY, TRELLO_TOKEN e HQ_TRELLO_ENABLED"},
     {service:"google_drive", ready:Boolean(google.data && googleConfigured), access:google.data && googleConfigured ? "drive_file" : "links_only", detail:google.data && googleConfigured ? "Conectado para arquivos do aplicativo" : googleConfigured ? "Autorize a conta Google no painel" : "GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, GOOGLE_TOKEN_ENCRYPTION_KEY"},
-    {service:"github", ready:github.accessible, access:github.accessible ? "repository_read" : "link_only", detail:github.accessible ? "Leitura de repositório verificada" : "Configure GITHUB_TOKEN com acesso de leitura ao repositório"},
+    {service:"github", ready:github.accessible, access:github.accessible ? "repository_read" : "link_only", detail:github.accessible ? "Leitura de repositório verificada; escrita de issues exige GITHUB_TOKEN e HQ_GITHUB_WRITES_ENABLED=true" : "Configure GITHUB_TOKEN com acesso de leitura ao repositório"},
     {service:"linkedin", ready:linkedInReady, access:"drafts_only", detail:"Publicação direta exige aplicativo LinkedIn aprovado, OAuth e escopos da página"},
-    {service:"vercel", ready:vercel.accessible, access:vercel.accessible ? "project_read" : "link_only", detail:vercel.accessible ? "Leitura do projeto verificada" : "VERCEL_API_TOKEN com permissão de leitura para o projeto"},
+    {service:"vercel", ready:vercel.accessible, access:vercel.accessible ? "project_read" : "link_only", detail:vercel.accessible ? "Leitura do projeto verificada; redeploy da Preview exige HQ_VERCEL_WRITES_ENABLED=true" : "VERCEL_API_TOKEN com permissão de leitura para o projeto"},
   ];
   return { connections: list, github, vercel, driveConnected: Boolean(google.data && googleConfigured) };
 }
