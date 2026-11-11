@@ -15,7 +15,7 @@ export const getTrelloStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
     const c = creds();
-    return { configured: c.configured, board: c.board };
+    return { configured: c.configured, board: c.board, writesConfigured: Boolean(process.env["HQ_TRELLO_WRITES_ENABLED"] === "true" && c.key && c.token) };
   });
 
 interface TrelloList { id: string; name: string; closed: boolean }
