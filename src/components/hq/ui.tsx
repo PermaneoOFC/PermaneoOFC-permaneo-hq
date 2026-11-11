@@ -1,3 +1,4 @@
+import { Portrait } from "./Portrait";
 import type { ReactNode } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
@@ -61,13 +62,21 @@ export function StatusPill({ status }: { status: Agent["status"] }) {
   return <Pill tone={statusTone[status]}><span className={cn("size-1.5 rounded-full", dot[status])} />{STATUS_LABEL[status]}</Pill>;
 }
 
-export function AgentAvatar({ agent, size = "md" }: { agent: Pick<Agent, "name" | "status" | "is_coordinator">; size?: "sm" | "md" | "lg" }) {
-  const s = size === "sm" ? "size-8 text-[11px]" : size === "lg" ? "size-16 text-xl" : "size-11 text-sm";
+export function AgentAvatar({ agent, size = "md" }: {
+  agent: Pick<Agent, "name" | "status" | "is_coordinator"> & { slug?: string };
+  size?: "sm" | "md" | "lg";
+}) {
+  const px = size === "sm" ? 38 : size === "lg" ? 96 : 52;
   return (
-    <span className={cn("relative inline-flex shrink-0 items-center justify-center rounded-full font-display font-bold",
-      agent.is_coordinator ? "bg-hero text-primary-foreground" : "bg-accent text-accent-foreground", s)}>
-      {initials(agent.name)}
-      <span className={cn("absolute -bottom-0.5 -right-0.5 size-3 rounded-full ring-2 ring-card", dot[agent.status])} />
+    <span className="agent-portrait relative inline-flex shrink-0 overflow-hidden rounded-lg"
+      style={{ width: px, height: px * 1.1 }}>
+      {agent.slug
+        ? <Portrait slug={agent.slug} name={agent.name} />
+        : <span className="flex h-full w-full items-center justify-center bg-accent font-bold text-accent-foreground">{initials(agent.name)}</span>}
+      <span aria-hidden="true" className={cn(
+        "absolute bottom-0 right-0 size-2.5 rounded-full ring-2 ring-card",
+        dot[agent.status],
+      )} />
     </span>
   );
 }
