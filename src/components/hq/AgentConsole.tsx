@@ -150,10 +150,14 @@ function AuthenticatedConsole({ slug }: { slug: string }) {
   }
   async function applyExternal(approvalId: string) {
     try {
-      const result = await agentJson<{ executed: boolean; service: string; action: string }>(
+      const result = await agentJson<{ executed: boolean; service: string; action: string; resultUrl?: string }>(
         "approvals/" + approvalId + "/apply", {},
       );
-      setError(result.executed ? "Ação aplicada no Trello. Consulte o quadro oficial para confirmar a atualização." : "ACTION_NOT_EXECUTED");
+      setError(result.executed
+        ? result.service === "google_drive"
+          ? "Documento criado no Google Drive: " + (result.resultUrl ?? "confira os documentos do HQ")
+          : "Ação aplicada no Trello. Consulte o quadro oficial."
+        : "ACTION_NOT_EXECUTED");
       await refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "EXTERNAL_ACTION_FAILED");
@@ -292,7 +296,13 @@ function AuthenticatedConsole({ slug }: { slug: string }) {
                       Executar no Trello (ação aprovada)
                     </Button>
                   )}
-                {approval.status === "approved" && approval.service !== "trello" &&
+                {approval.status === "approved" && approval.service === "google_drive" &&
+                  approval.action === "create_doc" && owns && canEdit && (
+                    <Button size="sm" variant="outline" onClick={() => void applyExternal(approval.id)}>
+                      Criar documento aprovado no Google Drive
+                    </Button>
+                  )}
+                {approval.status === "approved" && !["trello", "google_drive"].includes(approval.service) &&
                   <p className="text-xs text-muted-foreground">Esta integração ainda exige autorização externa; aprovação apenas registra a decisão.</p>}
 
                 {approval.status === "pending" &&
