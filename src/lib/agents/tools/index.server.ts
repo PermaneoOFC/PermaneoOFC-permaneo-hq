@@ -15,6 +15,7 @@ export function buildTools(
   guard: () => Promise<void>,
 ) {
   let calls = 0;
+  let internalWrites = 0;
   async function audited(name: string, action: () => Promise<unknown>) {
     await guard();
     if (++calls > 8) throw new ApiError(429, "TOOL_LIMIT");
@@ -68,6 +69,44 @@ export function buildTools(
           return { source: "trello_mirror", tasks: data, live: false };
         }),
     }),
+    create_hq_task: tool({
+      description: "Criar no máximo 2 tarefas INTERNAS do Permaneo HQ, não no Trello. Use apenas quando o usuário solicitar organizar ou distribuir trabalho. Nunca registrar dados pessoais de alunos.",
+      inputSchema: z.object({
+        title: z.string().trim().min(5).max(160),
+        details: z.string().trim().min(10).max(1600),
+        assignee: z.enum(["project-manager", "trello-scrum", "frontend", "backend", "devops", "qa-seguranca", "ui-ux", "marketing", "pitch", "documentarista", "pesquisa-dados", "educacional", "negocios", "financeiro"]),
+      }).strict(),
+      execute: async ({ title, details, assignee }) =>
+        audited("create_hq_task", async () => {
+          if (++internalWrites > 2) throw new ApiError(429, "INTERNAL_WRITE_LIMIT");
+          const { data: agent, error: agentError } = await userDb.from("agents").select("id").eq("slug", assignee).single();
+          checkDatabase(agentError);
+          if (!agent) throw new ApiError(404, "AGENT_NOT_FOUND");
+          const { data, error } = await userDb.from("agent_requests").insert({
+            agent_id: agent.id,
+            title,
+            details,
+            priority: "media",
+            status: "pendente",
+            requested_by: run.user_id,
+          }).select("id").single();
+          checkDatabase(error);
+          return { status: "created", location: "permaneo_hq_only", taskId: data?.id, assignee };
+        }),
+    }),
+    create_hq_document: tool({
+      description: "Registrar documento/resumo INTERNO no HQ, sem editar Google Drive. Somente o Documentarista pode usar e apenas após solicitação explícita de documentação.",
+      inputSchema: z.object({ title: z.string().trim().min(5).max(120), notes: z.string().trim().min(15).max(3000) }).strict(),
+      execute: async ({ title, notes }) =>
+        audited("create_hq_document", async () => {
+          if (++internalWrites > 1) throw new ApiError(429, "INTERNAL_WRITE_LIMIT");
+          const { data, error } = await userDb.from("documents").insert({
+            title, notes, kind: "registro_interno", created_by: run.user_id,
+          }).select("id").single();
+          checkDatabase(error);
+          return { status: "created", location: "permaneo_hq_only", documentId: data?.id };
+        }),
+    }),
     financial_scenario: tool({
       description:
         "Calcular receita mensal e ponto de equilíbrio exclusivamente com premissas informadas; não consulta valores de mercado.",
@@ -91,7 +130,7 @@ export function buildTools(
         "Registrar proposta para revisão humana. NÃO executa ação externa, mesmo depois da aprovação.",
       inputSchema: z
         .object({
-          service: z.enum(["trello", "github", "vercel"]),
+          service: z.enum(["trello", "google_drive", "github", "vercel"]),
           action: z.string().min(1).max(100),
           proposal: z.string().min(1).max(2000),
         })
