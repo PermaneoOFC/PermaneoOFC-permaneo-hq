@@ -189,3 +189,47 @@
   background-image: radial-gradient(color-mix(in oklab, var(--room-wall) 45%, transparent) 1px, transparent 1px);
   background-size: 16px 16px;
 }
+
+
+/* Permaneo HQ: floor-plan styles only; do not change site-wide colors or authentication. */
+.virtual-floor { min-width: 0; }
+.floor-control { display:grid; place-items:center; width:2rem; height:2rem; border-radius:.3rem; color:var(--foreground); transition:background-color .16s ease; }
+.floor-control:hover:not(:disabled),.floor-fit:hover { background:var(--secondary); }
+.floor-control:disabled { opacity:.35; cursor:not-allowed; }
+.floor-fit { display:inline-flex; align-items:center; gap:.4rem; border-radius:.3rem; padding:.45rem .55rem; font-size:.72rem; font-weight:600; transition:background-color .16s ease; }
+.floor-viewport { width:100%; overflow-x:auto; overflow-y:hidden; border:1px solid var(--border); border-radius:.65rem; background:#18272d; scrollbar-color:#6c8782 #27383e; scrollbar-width:thin; cursor:grab; touch-action:pan-y; }
+.floor-viewport.is-dragging { cursor:grabbing; user-select:none; }
+.floor-svg { display:block; max-width:none; height:auto; min-height:340px; }
+.floor-room { cursor:pointer; outline:none; }
+.floor-room .room-shadow { transition:stroke .18s ease,filter .18s ease; }
+.floor-room:hover .room-shadow,.floor-room:focus-visible .room-shadow { stroke:#69d8c3; stroke-width:4; filter:url(#roomShadow) brightness(1.12); }
+.floor-room.selected-room .room-shadow { stroke:#62d1bf; }
+.floor-person { display:flex; height:60px; align-items:center; flex-direction:column; justify-content:flex-start; gap:1px; color:#eff4ee; text-decoration:none; font-size:7px; line-height:1.1; white-space:nowrap; }
+.floor-person > span:last-child { max-width:58px; overflow:hidden; text-overflow:ellipsis; }
+.floor-person:focus-visible { outline:2px solid #68d6c4; outline-offset:2px; border-radius:4px; }
+.mobile-room { display:flex; align-items:center; gap:.8rem; padding:.65rem; border:1px solid var(--border); border-radius:.5rem; background:var(--card); transition:border-color .18s ease,background-color .18s ease; }
+.mobile-room-active { border-color:var(--primary); background:color-mix(in oklab,var(--primary) 8%,var(--card)); }
+.mobile-room-art { position:relative; display:flex; width:5.2rem; height:3.7rem; flex:none; align-items:flex-start; justify-content:flex-start; overflow:hidden; border-radius:.3rem; background:#25383e; padding:.4rem; color:var(--room-accent); }
+.mobile-window { position:absolute; top:.45rem; right:.4rem; width:1.6rem; height:.35rem; border-radius:2px; background:#8bc7c0; opacity:.75; }
+.mobile-desk { position:absolute; bottom:.8rem; left:.45rem; width:3.6rem; height:.35rem; border-radius:2px; background:#8e765e; }
+.mobile-people { position:absolute; right:.25rem; bottom:.15rem; display:flex; }
+.mobile-people > span { width:24px!important; height:24px!important; margin-left:-6px; border:1px solid #25383e; border-radius:50%; background:#354b50; }
+@media (max-width: 767px) { .floor-viewport { display:none; } }
+@media (prefers-reduced-motion: reduce) { .floor-room .room-shadow,.floor-control,.floor-fit,.mobile-room { transition:none; } }
+.agent-portrait svg { width:100%; height:100%; filter:drop-shadow(0 3px 4px #0002); }
+.floor-viewport { display:block; max-height:none; overflow-x:auto; overflow-y:hidden; touch-action:pan-y; overscroll-behavior-x:contain; border-radius:14px; box-shadow:inset 0 0 50px #0004; }
+.floor-svg { min-height:0; max-width:none; transition:width .2s ease; }
+.floor-viewport.is-dragging .floor-svg { transition:none; }
+.floor-person { height:84px; font-size:9px; gap:3px; transition:transform .18s; }
+.floor-person > span:last-child { max-width:90px; background:#10232dea; padding:3px 5px; border-radius:3px; }
+.floor-person:hover { transform:translateY(-5px); }
+.floor-person:hover > span:last-child { color:#8ae8cf; max-width:none; }
+.floor-position { height:3px; background:var(--border); margin:9px 0 18px; position:relative; border-radius:3px; }
+.floor-position span { position:absolute; height:3px; width:20%; background:var(--primary); border-radius:3px; }
+.virtual-floor aside { border-left:3px solid var(--primary); box-shadow:0 8px 25px #00000009; }
+.mobile-people > span { border-radius:5px; }
+.floor-room.selected-room { filter:brightness(1.06); }
+.floor-room { transition:filter .25s ease; }
+@media (max-width:767px) { .floor-viewport { display:block; } .floor-svg { max-height:none; } }
+@media (prefers-reduced-motion:reduce) { .floor-svg,.floor-person { transition:none; } }
+
