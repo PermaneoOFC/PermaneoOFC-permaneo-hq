@@ -41,3 +41,24 @@ A conexão do Google Drive **no ChatGPT** não fornece tokens à aplicação Ver
 6. Depois da conexão, um agente pode propor `service=google_drive`, `action=create_doc`, com `proposal` JSON `{"title":"Título","content":"Conteúdo"}`. O solicitante aprova, então clica **Criar documento aprovado**. A ação cria um novo documento no Drive do proprietário, sem exclusões automáticas.
 
 **Limitação importante:** `drive.file` autoriza apenas arquivos criados ou abertos pelo aplicativo. Documentos antigos que já estão indexados no HQ não podem ser editados automaticamente. Para isso seria necessário selecioná-los e conceder acesso explícito (por exemplo, com Google Picker), funcionalidade ainda não adicionada. Não conceder escopo amplo de Drive sem revisão de segurança.
+
+
+## GitHub — agentes de engenharia
+- Leitura: ferramentas \`github_repository\` consultam apenas o repositório \`PermaneoOFC/PermaneoOFC-permaneo-hq\`. Se público, não precisa de token; para privado, configure \`GITHUB_TOKEN\` na Preview com acesso de leitura ao repositório.
+- Escrita: \`GITHUB_TOKEN\` deve ter permissão **Issues: read/write** apenas para esse repositório; para habilitar, configure \`HQ_GITHUB_WRITES_ENABLED=true\` na Preview. Os agentes só podem propor \`service=github\`, \`action=create_issue\`, com JSON \`{"title":"Título","body":"Descrição"}\`. Depois, o humano aprova e clica em **Criar issue aprovada**; o banco impede reexecução da mesma proposta.
+- Não há push, alteração de código, PR ou merge automático.
+
+## Vercel — DevOps e coordenação
+- Configure \`VERCEL_API_TOKEN\` na Preview com acesso à equipe Permaneo. O conector valida o projeto \`permaneo-hq\` e consulta o deploy mais recente.
+- Para solicitar **apenas novo deploy da branch Preview**, configure separadamente \`HQ_VERCEL_WRITES_ENABLED=true\`; o DevOps pode propor \`service=vercel\`, \`action=redeploy_preview\`, com \`{"branch":"backend/ativacao-supabase","reason":"Motivo do deploy"}\`. Cada execução requer aprovação, clique explícito e é registrada apenas uma vez.
+- Produção, rollback e alterações de variáveis de ambiente não são expostos aos agentes.
+
+## LinkedIn — Marketing
+- O agente Marketing pode redigir publicações e registrar propostas \`service=linkedin\`, \`action=publish_post\`, com \`{"text":"Conteúdo revisável"}\` **para revisão interna**.
+- **Publicação não implementada nem conectada**. Para postar em nome da página Permaneo, é necessário um app LinkedIn Developers autorizado para gestão de página com escopos aprovados, credenciais OAuth da aplicação e autorização de administrador da página. O conector LinkedIn usado neste ChatGPT não fornece esse acesso à aplicação Vercel.
+- Nunca afirmar que uma publicação foi enviada, programada ou publicada apenas porque a proposta foi aprovada.
+
+## Central de Conexões
+- A página \`/integracoes\` consulta \`/api/integrations\` autenticado e mostra quais serviços foram verificados. Links não significam permissões de edição.
+- Nunca coloque tokens em nomes \`VITE_*\`, no GitHub, ou no chat. Use variáveis de servidor restritas à Preview; ative escrita separadamente de leitura. Depois de adicionar as credenciais, faça redeploy e execute uma operação pequena de teste antes de autorizar alterações reais.
+- Status do Google Drive significa autorização \`drive.file\` (escopo limitado), não acesso universal a todos os arquivos.
