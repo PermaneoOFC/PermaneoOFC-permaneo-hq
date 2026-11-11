@@ -38,11 +38,25 @@ function DemoIntegrations() {
   </>;
 }
 
+async function googleApi<T>(path: string, method: "GET" | "POST" = "GET"): Promise<T> {
+  const { data } = await supabase.auth.getSession();
+  if (!data.session) throw new Error("Entre com sua conta do HQ.");
+  const response = await fetch("/api/google/" + path, {
+    method,
+    headers: { Authorization: "Bearer " + data.session.access_token },
+    cache: "no-store",
+  });
+  const result = await response.json() as T & { error?: string };
+  if (!response.ok) throw new Error(result.error || "GOOGLE_CONNECTOR_UNAVAILABLE");
+  return result;
+}
+
 function LiveIntegrations() {
   const status = useServerFn(getTrelloStatus);
   const sync = useServerFn(syncTrello);
   const qc = useQueryClient();
   const st = useQuery({ queryKey: ["trello-status"], queryFn: () => status() });
+  const google = useQuery({ queryKey: ["google-drive-status"], queryFn: () => googleApi<{ configured: boolean; connected: boolean }>("status") });
   const logs = useQuery(syncLogsQuery).data ?? [];
   const tasks = useQuery(tasksQuery).data ?? [];
   const docs = useQuery({ queryKey: ["hq-drive-links"], queryFn: async () => {
@@ -54,7 +68,18 @@ function LiveIntegrations() {
   const internalDocs = docs.filter((d) => d.kind === "registro_interno");
   const trelloTasks = tasks.filter((t) => t.source === "trello" && t.board_id === "IfYN7SWi");
   const [busy, setBusy] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
   const { canEdit } = useAuth();
+  async function connectGoogle() {
+    setGoogleBusy(true);
+    try {
+      const result = await googleApi<{ url: string }>("connect", "POST");
+      window.location.assign(result.url);
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "GOOGLE_CONNECTOR_UNAVAILABLE");
+      setGoogleBusy(false);
+    }
+  }
   async function run() {
     setBusy(true);
     try {
@@ -78,9 +103,14 @@ function LiveIntegrations() {
         <h3 className="mb-2 mt-5 text-sm font-semibold">Logs</h3>
         {logs.length ? <ul className="space-y-1 text-xs">{logs.map((l) => <li key={l.id}>{new Date(l.created_at).toLocaleString("pt-BR")} — {l.status}: {l.message}</li>)}</ul> : <Empty>Nenhuma sincronização.</Empty>}
       </Panel>
-      <Panel title="Google Drive · Permaneo" action={<Pill tone={driveDocs.length ? "success" : "warning"}>{driveDocs.length ? `${driveDocs.length} referências` : "Sem referências"}</Pill>}>
+      <Panel title="Google Drive · Permaneo" action={<Pill tone={google.data?.connected ? "success" : "warning"}>{google.data?.connected ? "Conectado ao Google" : google.data?.configured ? "Autorizar conta" : "OAuth não configurado"}</Pill>}>
         <p className="text-sm text-muted-foreground">Links indexados no HQ. Os documentos permanecem no Drive e só abrem para quem já possui permissão. A sincronização automática via OAuth ainda não está autorizada.</p>
-        <p className="mt-2 rounded-lg bg-muted p-3 text-xs">O agente Documentarista pode criar documentos internos no HQ. Para criar ou editar arquivos diretamente no Drive, é preciso conectar uma aplicação Google OAuth com permissão explícita. Nenhuma permissão será presumida.</p>
+        <p className="mt-2 rounded-lg bg-muted p-3 text-xs">Os links já indexados continuam com suas permissões originais. O OAuth de escopo drive.file permite criar arquivos novos e editar arquivos autorizados ao app, não dá acesso geral aos documentos antigos.</p>
+        {!google.data?.connected && <Button type="button" variant="outline" className="mt-3" disabled={!canEdit || googleBusy || !google.data?.configured} onClick={() => void connectGoogle()}>
+          <ExternalLink size={16}/> {googleBusy ? "Abrindo Google…" : "Autorizar meu Google Drive"}
+        </Button>}
+        {google.data?.connected && <p className="mt-3 text-xs text-success">Conta Google autorizada para os arquivos do aplicativo. Criações de documentos exigem aprovação registrada.</p>}
+        {!google.data?.configured && <p className="mt-2 text-xs text-muted-foreground">Para liberar o botão, configure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI e GOOGLE_TOKEN_ENCRYPTION_KEY como segredos Preview da Vercel. Nunca cole chaves no código ou nesta conversa.</p>}
         <a className="mt-3 inline-flex items-center gap-2 text-sm font-medium underline" href="https://drive.google.com/drive/folders/1gmRQFad9CgwEfo3MjVBEW66OVOEK-YAn" target="_blank" rel="noopener noreferrer"><FolderOpen size={16} /> Abrir a pasta central <ExternalLink size={14}/></a>
         <ul className="mt-4 max-h-64 space-y-2 overflow-auto text-sm">
           {driveDocs.filter(d => d.kind !== "pasta").map(d => <li key={d.id}><a className="flex items-center gap-2 hover:underline" href={d.url!} rel="noopener noreferrer" target="_blank"><ExternalLink size={13} /><span className="truncate">{d.title}</span></a></li>)}
