@@ -7,6 +7,7 @@ import { limits, modelConfiguration } from "./config.server";
 import { adminDatabase, checkDatabase, runStore } from "./store.server";
 import { buildTools } from "./tools/index.server";
 import { executeRun } from "./runner.server";
+import { applyApprovedAction } from "./external.server";
 
 const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
 function json(data: unknown, status = 200) {
@@ -177,6 +178,14 @@ export async function handleAgents(request: Request): Promise<Response> {
           },
         });
       }
+    }
+    if (request.method === "POST" && path[0] === "approvals" && path.length === 3 && path[2] === "apply") {
+      assertEditor(actor);
+      const id = z.string().uuid().parse(path[1]);
+      const result = await applyApprovedAction({
+        id, actorId: actor.id, isAdmin: actor.role === "admin", db, admin,
+      });
+      return json(result);
     }
     if (request.method === "POST" && path[0] === "approvals" && path.length === 2) {
       assertEditor(actor);
