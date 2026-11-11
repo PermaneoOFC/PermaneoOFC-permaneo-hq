@@ -46,11 +46,12 @@ function LiveIntegrations() {
   const logs = useQuery(syncLogsQuery).data ?? [];
   const tasks = useQuery(tasksQuery).data ?? [];
   const docs = useQuery({ queryKey: ["hq-drive-links"], queryFn: async () => {
-    const { data, error } = await supabase.from("documents").select("id,title,url,kind").not("url","is",null).order("created_at", { ascending: false }).limit(30);
+    const { data, error } = await supabase.from("documents").select("id,title,url,kind,notes").order("created_at", { ascending: false }).limit(60);
     if (error) throw error;
     return data ?? [];
   } }).data ?? [];
   const driveDocs = docs.filter((d) => d.url?.startsWith("https://drive.google.com/") || d.url?.startsWith("https://docs.google.com/"));
+  const internalDocs = docs.filter((d) => d.kind === "registro_interno");
   const trelloTasks = tasks.filter((t) => t.source === "trello" && t.board_id === "IfYN7SWi");
   const [busy, setBusy] = useState(false);
   const { canEdit } = useAuth();
@@ -84,6 +85,8 @@ function LiveIntegrations() {
         <ul className="mt-4 max-h-64 space-y-2 overflow-auto text-sm">
           {driveDocs.filter(d => d.kind !== "pasta").map(d => <li key={d.id}><a className="flex items-center gap-2 hover:underline" href={d.url!} rel="noopener noreferrer" target="_blank"><ExternalLink size={13} /><span className="truncate">{d.title}</span></a></li>)}
         </ul>
+        <h3 className="mt-4 text-sm font-semibold">Documentos internos criados pelos agentes ({internalDocs.length})</h3>
+        <ul className="mt-2 space-y-2">{internalDocs.map((d) => <li key={d.id} className="rounded-lg bg-muted p-3 text-sm"><strong>{d.title}</strong><p className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap text-xs text-muted-foreground">{d.notes}</p></li>)}</ul>
       </Panel>
       <Panel title="GitHub · Código" action={<Pill tone="warning">Acesso por link</Pill>}>
         <p className="text-sm text-muted-foreground">Repositório oficial do escritório. Os agentes podem sugerir mudanças, mas o HQ não faz commits nem merges automaticamente.</p>
