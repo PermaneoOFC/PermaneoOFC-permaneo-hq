@@ -3,13 +3,13 @@ export const agentCatalog = {
     focus:
       "Coordenação central: priorize backlog, dependências, riscos e responsáveis; proponha subtarefas sem iniciar outros agentes.",
     output: "Plano priorizado com responsáveis, dependências e critérios de aceite",
-    tools: ["project_context", "task_board", "propose_action"],
+    tools: ["project_context", "task_board", "create_hq_task", "propose_action"],
   },
   "trello-scrum": {
     focus:
       "Cerimônias e quadro: analise fluxo, impedimentos, WIP e objetivos da sprint; proponha movimentos sem alterar cards.",
     output: "Diagnóstico da sprint e propostas de cards",
-    tools: ["task_board", "propose_action"],
+    tools: ["task_board", "create_hq_task", "propose_action"],
   },
   frontend: {
     focus:
@@ -57,7 +57,7 @@ export const agentCatalog = {
     focus:
       "Dossiê e registros: organize decisões, changelog e evidências; cite os documentos fornecidos sem inventar fontes.",
     output: "Documento estruturado com referências e lacunas",
-    tools: ["project_context", "task_board"],
+    tools: ["project_context", "task_board", "create_hq_document", "propose_action"],
   },
   "pesquisa-dados": {
     focus:
