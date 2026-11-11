@@ -56,15 +56,16 @@ export function buildTools(
     task_board: tool({
       description:
         "Consultar o último espelho autorizado do quadro Trello. Não é consulta ao vivo; conferir last_synced_at.",
-      inputSchema: z.object({}).strict(),
-      execute: async () =>
+      inputSchema: z.object({ search: z.string().trim().min(2).max(70).optional() }).strict(),
+      execute: async ({ search }) =>
         audited("task_board", async () => {
-          const { data, error } = await userDb
+          let query = userDb
             .from("mirrored_tasks")
-            .select("name,list_name,description,last_synced_at,url")
+            .select("external_id,list_id,name,list_name,description,last_synced_at,url")
             .eq("board_id", "IfYN7SWi")
-            .eq("closed", false)
-            .limit(20);
+            .eq("closed", false);
+          if (search) query = query.ilike("name", "%" + search.replace(/[%_]/g, "") + "%");
+          const { data, error } = await query.limit(12);
           checkDatabase(error);
           return { source: "trello_mirror", tasks: data, live: false };
         }),
