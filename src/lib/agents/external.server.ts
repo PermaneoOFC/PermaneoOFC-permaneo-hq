@@ -59,6 +59,56 @@ export async function applyApprovedAction(opts: {
   if (!data) throw new ApiError(404, "APPROVAL_NOT_FOUND");
   if (!isAdmin && data.user_id !== actorId) throw new ApiError(403, "OWNER_REQUIRED");
   if (data.status !== "approved") throw new ApiError(409, "APPROVAL_REQUIRED");
+  if (data.service === "vercel") {
+    if (data.action !== "redeploy_preview") throw new ApiError(400, "EXTERNAL_ACTION_NOT_SUPPORTED");
+    if (process.env["HQ_VERCEL_WRITES_ENABLED"] !== "true" || !process.env["VERCEL_API_TOKEN"])
+      throw new ApiError(503, "VERCEL_WRITE_NOT_CONFIGURED");
+    let proposal: { branch: string; reason: string };
+    try {
+      proposal = z.object({
+        branch: z.literal("backend/ativacao-supabase"),
+        reason: z.string().trim().min(10).max(300),
+      }).strict().parse(JSON.parse(data.proposal));
+    } catch { throw new ApiError(400, "INVALID_EXTERNAL_PROPOSAL"); }
+    const token = process.env["VERCEL_API_TOKEN"];
+    const headers = { Authorization: "Bearer " + token, "Content-Type": "application/json" };
+    const projectId = "prj_bjeTMvY2fq8uVHCEsO5SdCXZ5thJ";
+    const teamId = "team_tXvPv0h45WoJFlXJcPy1yWZ4";
+    const check = await fetch("https://api.vercel.com/v9/projects/" + projectId + "?teamId=" + teamId,
+      { headers, signal: AbortSignal.timeout(8000) });
+    if (!check.ok) throw new ApiError(503, "VERCEL_PROJECT_UNAVAILABLE");
+    const project = await check.json() as { id?: string };
+    if (project.id !== projectId) throw new ApiError(403, "WRONG_VERCEL_PROJECT");
+    const { data: claim, error: claimError } = await admin.from("external_action_executions")
+      .insert({ approval_id: id, service: "vercel", action: "redeploy_preview", status: "started" })
+      .select("id").maybeSingle();
+    if (claimError?.message.includes("duplicate key")) throw new ApiError(409, "ACTION_ALREADY_ATTEMPTED");
+    checkDatabase(claimError);
+    if (!claim) throw new ApiError(409, "ACTION_ALREADY_ATTEMPTED");
+    try {
+      const response = await fetch("https://api.vercel.com/v13/deployments?teamId=" + teamId, {
+        method: "POST", headers,
+        body: JSON.stringify({
+          name: "permaneo-hq", project: projectId, target: "preview",
+          gitSource: { type: "github", org: "PermaneoOFC", repo: "PermaneoOFC-permaneo-hq", ref: proposal.branch },
+        }), signal: AbortSignal.timeout(12000),
+      });
+      if (!response.ok) throw new ApiError(502, "VERCEL_DEPLOYMENT_FAILED");
+      const deployment = await response.json() as { id?: string; url?: string };
+      const resultUrl = deployment.url ? "https://" + deployment.url : null;
+      const { error: logError } = await admin.from("external_action_executions").update({
+        status: "completed", result_url: resultUrl, finished_at: new Date().toISOString(),
+      }).eq("id", claim.id);
+      checkDatabase(logError);
+      return { executed: true, service: "vercel", action: "redeploy_preview", resultUrl };
+    } catch (cause) {
+      await admin.from("external_action_executions").update({
+        status: "failed", error_code: cause instanceof ApiError ? cause.code : "VERCEL_REQUEST_FAILED",
+        finished_at: new Date().toISOString(),
+      }).eq("id", claim.id);
+      throw cause;
+    }
+  }
   if (data.service === "github") {
     if (data.action !== "create_issue") throw new ApiError(400, "EXTERNAL_ACTION_NOT_SUPPORTED");
     if (process.env["HQ_GITHUB_WRITES_ENABLED"] !== "true" || !process.env["GITHUB_TOKEN"])
