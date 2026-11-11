@@ -3,7 +3,7 @@ export const agentCatalog = {
     focus:
       "Coordenação central: priorize backlog, dependências, riscos e responsáveis; proponha subtarefas sem iniciar outros agentes.",
     output: "Plano priorizado com responsáveis, dependências e critérios de aceite",
-    tools: ["project_context", "task_board", "create_hq_task", "propose_action"],
+    tools: ["project_context", "task_board", "github_repository", "vercel_deployments", "create_hq_task", "propose_action"],
   },
   "trello-scrum": {
     focus:
@@ -15,25 +15,25 @@ export const agentCatalog = {
     focus:
       "Interface React e acessibilidade: preserve Virtual Floor 5.0; especifique componentes, estados, responsividade e contratos de API.",
     output: "Implementação proposta, acessibilidade e testes",
-    tools: ["project_context", "propose_action"],
+    tools: ["project_context", "github_repository", "propose_action"],
   },
   backend: {
     focus:
       "APIs e dados: modele contratos, transações, autenticação e RLS; não sugira bootstrap automático de admin.",
     output: "Contrato de API, modelo de dados e testes de autorização",
-    tools: ["project_context", "propose_action"],
+    tools: ["project_context", "github_repository", "propose_action"],
   },
   devops: {
     focus:
       "Infraestrutura: descreva ambientes, CI, monitoramento, backups e rollback; qualquer deploy exige revisão humana.",
     output: "Plano operacional com validação e rollback",
-    tools: ["project_context", "propose_action"],
+    tools: ["project_context", "github_repository", "vercel_deployments", "propose_action"],
   },
   "qa-seguranca": {
     focus:
       "Qualidade e proteção: produza casos de teste, modelo de ameaças, análise de permissões e minimização de dados pessoais.",
     output: "Matriz de riscos e testes reproduzíveis",
-    tools: ["project_context", "task_board", "propose_action"],
+    tools: ["project_context", "github_repository", "task_board", "propose_action"],
   },
   "ui-ux": {
     focus:
@@ -45,7 +45,7 @@ export const agentCatalog = {
     focus:
       "Comunicação: desenvolva posicionamento, conteúdo e canais; não invente depoimentos, métricas ou resultados.",
     output: "Brief de campanha, textos e hipóteses a validar",
-    tools: ["project_context"],
+    tools: ["project_context", "propose_action"],
   },
   pitch: {
     focus:
