@@ -68,7 +68,9 @@ create table public.agent_requests (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-grant select, insert, update, delete on public.agent_requests to authenticated;
+grant select, insert, delete on public.agent_requests to authenticated;
+-- Update only editable fields; requested_by, requester_email, ids, timestamps and agent ownership cannot be reassigned by clients.
+grant update (title, details, priority, due_date, status) on public.agent_requests to authenticated;
 grant all on public.agent_requests to service_role;
 alter table public.agent_requests enable row level security;
 create policy "requests readable" on public.agent_requests for select to authenticated using (true);
