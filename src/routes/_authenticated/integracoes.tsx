@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { ExternalLink, FolderOpen } from "lucide-react";
 import { PageHeader, Panel, Pill, Empty } from "@/components/hq/ui";
 import { TeamAccessPanel } from "@/components/hq/TeamAccessPanel";
+import { IntegrationMatrix } from "@/components/hq/IntegrationMatrix";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { DEMO_MODE } from "@/lib/demo";
@@ -92,6 +93,7 @@ function LiveIntegrations() {
   }
   return (<>
     <PageHeader eyebrow="Conectores" title="Integrações" description="Nenhuma conexão é presumida. Tokens ficam somente no servidor." />
+    <div className="mb-6"><IntegrationMatrix /></div>
     <div className="grid gap-6 md:grid-cols-2">
       <Panel title="Trello · Demo Day" action={st.isLoading ? <Pill>Verificando…</Pill> : st.data?.configured ? <Pill tone="success">Configurado</Pill> : <Pill tone="danger">Não conectado</Pill>}>
         {st.error && <p className="mb-3 text-sm text-destructive">{(st.error as Error).message}</p>}
