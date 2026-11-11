@@ -306,6 +306,5 @@ revoke all on function public.audit_trigger(), public.touch_updated_at() from pu
 revoke all on function public.list_team_members(), public.set_team_member_role(uuid,public.app_role) from anon;
 revoke all on function public.has_role(uuid,public.app_role), public.can_edit(uuid), public.is_team_member(uuid),
   public.list_team_members(), public.set_team_member_role(uuid,public.app_role) from public;
-revoke all on table public.agent_runs, public.agent_messages, public.agent_artifacts, public.agent_tool_calls,
-  public.agent_approvals, public.usage_logs, public.agent_run_events from anon, authenticated;
+-- Execution tables are created and permissioned in 002_agent_engine.sql.
 commit;
