@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "./contracts";
 import { checkDatabase } from "./store.server";
+import { createApprovedGoogleDocument } from "@/lib/google-drive.server";
 
 const board = "IfYN7SWi";
 const comment = z.object({ cardId: z.string().regex(/^[a-f0-9]{24}$/), text: z.string().trim().min(3).max(800) }).strict();
@@ -58,6 +59,44 @@ export async function applyApprovedAction(opts: {
   if (!data) throw new ApiError(404, "APPROVAL_NOT_FOUND");
   if (!isAdmin && data.user_id !== actorId) throw new ApiError(403, "OWNER_REQUIRED");
   if (data.status !== "approved") throw new ApiError(409, "APPROVAL_REQUIRED");
+  if (data.service === "google_drive") {
+    if (data.action !== "create_doc") throw new ApiError(400, "EXTERNAL_ACTION_NOT_SUPPORTED");
+    let proposal: { title: string; content: string };
+    try {
+      proposal = z.object({
+        title: z.string().trim().min(5).max(120),
+        content: z.string().trim().min(10).max(1200),
+      }).strict().parse(JSON.parse(data.proposal));
+    } catch { throw new ApiError(400, "INVALID_EXTERNAL_PROPOSAL"); }
+    // Fail before claiming an irreversible action when the account or OAuth app is unconfigured.
+    if (!process.env["GOOGLE_CLIENT_ID"] || !process.env["GOOGLE_CLIENT_SECRET"] ||
+        !process.env["GOOGLE_REDIRECT_URI"] || !process.env["GOOGLE_TOKEN_ENCRYPTION_KEY"])
+      throw new ApiError(503, "GOOGLE_OAUTH_NOT_CONFIGURED");
+    const { data: connection, error: connectionError } = await admin.from("google_drive_connections")
+      .select("user_id").eq("user_id", data.user_id).maybeSingle();
+    checkDatabase(connectionError);
+    if (!connection) throw new ApiError(503, "GOOGLE_DRIVE_NOT_CONNECTED");
+    const { data: claim, error: claimError } = await admin.from("external_action_executions")
+      .insert({ approval_id: id, service: data.service, action: data.action, status: "started" })
+      .select("id").maybeSingle();
+    if (claimError?.message.includes("duplicate key")) throw new ApiError(409, "ACTION_ALREADY_ATTEMPTED");
+    checkDatabase(claimError);
+    if (!claim) throw new ApiError(409, "ACTION_ALREADY_ATTEMPTED");
+    try {
+      const result = await createApprovedGoogleDocument(data.user_id, proposal.title, proposal.content, admin);
+      const { error: saveError } = await admin.from("external_action_executions").update({
+        status: "completed", result_url: result.link, finished_at: new Date().toISOString(),
+      }).eq("id", claim.id);
+      checkDatabase(saveError);
+      return { executed: true, service: "google_drive", action: "create_doc", resultUrl: result.link };
+    } catch (cause) {
+      await admin.from("external_action_executions").update({
+        status: "failed", finished_at: new Date().toISOString(),
+        error_code: cause instanceof ApiError ? cause.code : "GOOGLE_DRIVE_REQUEST_FAILED",
+      }).eq("id", claim.id);
+      throw cause;
+    }
+  }
   if (data.service !== "trello" || !isTrelloAction(data.action))
     throw new ApiError(400, "EXTERNAL_ACTION_NOT_SUPPORTED");
   if (process.env["HQ_TRELLO_WRITES_ENABLED"] !== "true" ||
