@@ -1,11 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowRight, Bot, Building2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AgentAvatar } from "@/components/hq/ui";
 import { OfficeMap } from "@/components/hq/OfficeMap";
-import { agentsQuery } from "@/lib/hq";
+import { demoAgents } from "@/lib/demo";
 import { DEMO_MODE } from "@/lib/demo";
 
 export const Route = createFileRoute("/")({
@@ -18,9 +17,9 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 function Index() {
-  const agents = useQuery(agentsQuery).data ?? [];
+  const agents = demoAgents;
   const [selectedRoom, setSelectedRoom] = useState("engenharia");
-  const destination: "/painel" | "/auth" = DEMO_MODE ? "/painel" : "/auth";
+  const destination: "/painel" | "/explorar" = DEMO_MODE ? "/painel" : "/explorar";
   return (
     <main className="home-page min-h-screen bg-background text-foreground">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 md:px-10">
@@ -49,9 +48,10 @@ function Index() {
           </p>
           <Button asChild className="mt-7 rounded-md">
             <Link to={destination}>
-              Entrar no escritório <ArrowRight className="ml-2 size-4" />
+              Explorar escritório sem login <ArrowRight className="ml-2 size-4" />
             </Link>
           </Button>
+          {!DEMO_MODE && <p className="mt-3 text-sm text-muted-foreground">Para usar IA, tarefas e integrações, <Link to="/auth" className="font-semibold text-primary underline underline-offset-4">acessar área da equipe</Link>.</p>}
           <div className="mt-8 flex flex-wrap gap-6 text-sm text-muted-foreground">
             <span className="flex items-center gap-2">
               <Users className="size-4 text-primary" />5 integrantes
@@ -83,11 +83,11 @@ function Index() {
             <p className="text-xs uppercase tracking-widest text-primary">Conheça o espaço</p>
             <h2 className="mt-1 text-2xl font-bold">O andar virtual</h2>
           </div>
-          <Link to="/escritorio" className="flex items-center gap-1 text-sm text-primary">
+          <Link to="/explorar" className="flex items-center gap-1 text-sm text-primary">
             Explorar escritório <ArrowRight className="size-4" />
           </Link>
         </div>
-        <OfficeMap agents={agents} selected={selectedRoom} onSelect={setSelectedRoom} />
+        <OfficeMap agents={agents} publicView selected={selectedRoom} onSelect={setSelectedRoom} />
         <div className="home-team-feature mt-12 grid gap-6 rounded-2xl border p-7 md:grid-cols-[1fr_auto]">
           <div>
             <p className="text-xs uppercase tracking-widest text-primary">O lado humano do HQ</p>
@@ -122,7 +122,7 @@ function Index() {
           {agents.map((a) => (
             <Link
               key={a.id}
-              to="/agentes/$slug"
+              to="/explorar/$slug"
               params={{ slug: a.slug }}
               className="agent-directory-card flex items-center gap-3 rounded-xl border bg-card p-4"
             >
