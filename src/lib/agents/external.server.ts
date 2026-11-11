@@ -30,6 +30,21 @@ async function trelloRequest(path: string, data: Record<string, string>, method:
   return (await response.json()) as { id?: string; url?: string };
 }
 
+const realBoardId = "6af31f42347314fd0f6e04dd";
+async function verifyTrelloResource(path: string) {
+  const key = process.env["TRELLO_API_KEY"];
+  const token = process.env["TRELLO_TOKEN"];
+  if (!key || !token) throw new ApiError(503, "TRELLO_WRITE_NOT_CONFIGURED");
+  const query = new URLSearchParams({ key, token });
+  const response = await fetch("https://api.trello.com/1/" + path + "?fields=idBoard,closed&" + query, {
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok) throw new ApiError(502, "TRELLO_RESOURCE_UNAVAILABLE");
+  const resource = (await response.json()) as { idBoard?: string; closed?: boolean };
+  if (resource.idBoard !== realBoardId || resource.closed)
+    throw new ApiError(403, "RESOURCE_OUTSIDE_APPROVED_BOARD");
+}
+
 /** Called only after a signed-in editor has approved a structured agent proposal.
  *  At-most-once insertion before the outbound call prevents duplicate Trello writes.
  *  A failed call is not retried automatically.
@@ -67,6 +82,10 @@ export async function applyApprovedAction(opts: {
     checkDatabase(listError);
     if (!rows?.length) throw new ApiError(400, "TARGET_LIST_NOT_IN_BOARD");
   }
+  // Revalidate membership using the live provider before any action.
+  await verifyTrelloResource("cards/" + payload.cardId);
+  if (data.action === "move_card")
+    await verifyTrelloResource("lists/" + (payload as z.infer<typeof move>).targetListId);
   const { data: claim, error: claimError } = await admin.from("external_action_executions")
     .insert({ approval_id: id, service: data.service, action: data.action, status: "started" })
     .select("id").maybeSingle();
