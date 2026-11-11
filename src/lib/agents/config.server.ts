@@ -1,6 +1,7 @@
 import "@tanstack/react-start/server-only";
 import { ApiError } from "./contracts";
 import { requiredEnv } from "./permissions.server";
+import type { AgentSlug } from "./catalog";
 
 function limit(name: string, fallback: number, max: number) {
   const n = Number(process.env[name] ?? fallback);
@@ -29,8 +30,19 @@ export function limits() {
 }
 export type Limits = ReturnType<typeof limits>;
 
-export async function modelConfiguration(config = limits()) {
-  const model = requiredEnv("AI_GATEWAY_MODEL");
+// Each agent uses an economical, non-training model appropriate to its task.
+// Free trial models are deliberately excluded: some providers retain prompts for training.
+export function modelForAgent(slug?: AgentSlug) {
+  const general = process.env["AI_GATEWAY_MODEL_GENERAL"] || requiredEnv("AI_GATEWAY_MODEL");
+  if (slug && ["frontend", "backend", "devops", "qa-seguranca"].includes(slug))
+    return process.env["AI_GATEWAY_MODEL_CODE"] || general;
+  if (slug && ["project-manager", "trello-scrum", "pesquisa-dados", "educacional", "negocios", "financeiro"].includes(slug))
+    return process.env["AI_GATEWAY_MODEL_RESEARCH"] || general;
+  return general;
+}
+
+export async function modelConfiguration(config = limits(), slug?: AgentSlug) {
+  const model = modelForAgent(slug);
   if (!process.env["AI_GATEWAY_API_KEY"] && !process.env["VERCEL_OIDC_TOKEN"])
     throw new ApiError(503, "GATEWAY_NOT_CONFIGURED");
   const response = await fetch("https://ai-gateway.vercel.sh/v1/models", {
