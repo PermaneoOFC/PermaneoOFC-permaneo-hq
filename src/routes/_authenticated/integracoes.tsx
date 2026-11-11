@@ -70,6 +70,7 @@ function LiveIntegrations() {
       <Panel title="Trello · Demo Day" action={st.isLoading ? <Pill>Verificando…</Pill> : st.data?.configured ? <Pill tone="success">Configurado</Pill> : <Pill tone="danger">Não conectado</Pill>}>
         {st.error && <p className="mb-3 text-sm text-destructive">{(st.error as Error).message}</p>}
         {!st.data?.configured && <p className="mb-4 text-sm text-muted-foreground">Para conectar: gere uma chave e um token em trello.com/power-ups/admin e peça para salvá-los como segredos TRELLO_API_KEY e TRELLO_TOKEN nas configurações do projeto. Acesso somente leitura.</p>}
+        <p className="mb-3 rounded-lg bg-muted p-3 text-xs">Alterações reais no quadro: {st.data?.writesConfigured ? "Credenciais de escrita configuradas. Ações exigem proposta e aprovação." : "Desativadas. A aprovação de proposta não altera o Trello até que TRELLO_API_KEY, TRELLO_TOKEN e HQ_TRELLO_WRITES_ENABLED=true estejam configurados na Preview."}</p>
         <Button onClick={run} disabled={busy || !canEdit || !st.data?.configured} title={!canEdit ? "Apenas editores podem sincronizar" : undefined}><RefreshCw className={busy ? "animate-spin" : ""} /> Sincronizar agora</Button>
         <p className="mt-4 text-sm text-muted-foreground">Último espelho importado: <strong>{trelloTasks.length} cards</strong>. Uma nova sincronização só é possível após configurar a chave e o token Trello neste projeto.</p>
         <a className="mt-2 inline-flex items-center gap-2 text-sm font-medium underline" href="https://trello.com/b/IfYN7SWi/demo-day" target="_blank" rel="noopener noreferrer"><ExternalLink size={14}/> Abrir quadro oficial</a>
@@ -78,6 +79,7 @@ function LiveIntegrations() {
       </Panel>
       <Panel title="Google Drive · Permaneo" action={<Pill tone={driveDocs.length ? "success" : "warning"}>{driveDocs.length ? `${driveDocs.length} referências` : "Sem referências"}</Pill>}>
         <p className="text-sm text-muted-foreground">Links indexados no HQ. Os documentos permanecem no Drive e só abrem para quem já possui permissão. A sincronização automática via OAuth ainda não está autorizada.</p>
+        <p className="mt-2 rounded-lg bg-muted p-3 text-xs">O agente Documentarista pode criar documentos internos no HQ. Para criar ou editar arquivos diretamente no Drive, é preciso conectar uma aplicação Google OAuth com permissão explícita. Nenhuma permissão será presumida.</p>
         <a className="mt-3 inline-flex items-center gap-2 text-sm font-medium underline" href="https://drive.google.com/drive/folders/1gmRQFad9CgwEfo3MjVBEW66OVOEK-YAn" target="_blank" rel="noopener noreferrer"><FolderOpen size={16} /> Abrir a pasta central <ExternalLink size={14}/></a>
         <ul className="mt-4 max-h-64 space-y-2 overflow-auto text-sm">
           {driveDocs.filter(d => d.kind !== "pasta").map(d => <li key={d.id}><a className="flex items-center gap-2 hover:underline" href={d.url!} rel="noopener noreferrer" target="_blank"><ExternalLink size={13} /><span className="truncate">{d.title}</span></a></li>)}
