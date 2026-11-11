@@ -148,6 +148,17 @@ function AuthenticatedConsole({ slug }: { slug: string }) {
       setError(cause instanceof Error ? cause.message : "APPROVAL_FAILED");
     }
   }
+  async function applyExternal(approvalId: string) {
+    try {
+      const result = await agentJson<{ executed: boolean; service: string; action: string }>(
+        "approvals/" + approvalId + "/apply", {},
+      );
+      setError(result.executed ? "Ação aplicada no Trello. Consulte o quadro oficial para confirmar a atualização." : "ACTION_NOT_EXECUTED");
+      await refresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "EXTERNAL_ACTION_FAILED");
+    }
+  }
   return (
     <section id="agent-console" className="my-6 space-y-4" aria-label="Conversa com o agente">
       <Panel title="Trabalho com o agente">
@@ -273,7 +284,17 @@ function AuthenticatedConsole({ slug }: { slug: string }) {
                   Proposta: {approval.service} · {approval.action}
                 </p>
                 <p className="whitespace-pre-wrap">{approval.proposal}</p>
-                <p>Revisão: {approval.status}. Nenhuma alteração externa foi executada.</p>
+                <p>Revisão: {approval.status}. A aprovação não executa alterações externas sozinha.</p>
+                {approval.status === "approved" && approval.service === "trello" &&
+                  ["add_comment", "add_checklist", "move_card"].includes(approval.action) &&
+                  owns && canEdit && (
+                    <Button size="sm" variant="outline" onClick={() => void applyExternal(approval.id)}>
+                      Executar no Trello (ação aprovada)
+                    </Button>
+                  )}
+                {approval.status === "approved" && approval.service !== "trello" &&
+                  <p className="text-xs text-muted-foreground">Esta integração ainda exige autorização externa; aprovação apenas registra a decisão.</p>}
+
                 {approval.status === "pending" &&
                   run?.status === "awaiting_approval" &&
                   canEdit &&
