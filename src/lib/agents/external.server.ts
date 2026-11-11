@@ -14,14 +14,14 @@ export function isTrelloAction(action: string): action is Action {
   return ["add_comment", "add_checklist", "move_card"].includes(action);
 }
 
-async function trelloRequest(path: string, data: Record<string, string>) {
+async function trelloRequest(path: string, data: Record<string, string>, method: "POST" | "PUT" = "POST") {
   const key = process.env["TRELLO_API_KEY"];
   const token = process.env["TRELLO_TOKEN"];
   if (process.env["HQ_TRELLO_WRITES_ENABLED"] !== "true" || !key || !token)
     throw new ApiError(503, "TRELLO_WRITE_NOT_CONFIGURED");
   const form = new URLSearchParams({ key, token, ...data });
   const response = await fetch("https://api.trello.com/1/" + path, {
-    method: "POST",
+    method,
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: form.toString(),
     signal: AbortSignal.timeout(10000),
@@ -78,7 +78,7 @@ export async function applyApprovedAction(opts: {
       ? await trelloRequest("cards/" + payload.cardId + "/actions/comments", { text: (payload as z.infer<typeof comment>).text })
       : data.action === "add_checklist"
         ? await trelloRequest("cards/" + payload.cardId + "/checklists", { name: (payload as z.infer<typeof checklist>).name })
-        : await trelloRequest("cards/" + payload.cardId + "/idList", { value: (payload as z.infer<typeof move>).targetListId });
+        : await trelloRequest("cards/" + payload.cardId, { idList: (payload as z.infer<typeof move>).targetListId }, "PUT");
     const { error: saveError } = await admin.from("external_action_executions")
       .update({ status: "completed", finished_at: new Date().toISOString(),
         result_url: "https://trello.com/c/" + payload.cardId }).eq("id", claim.id);
