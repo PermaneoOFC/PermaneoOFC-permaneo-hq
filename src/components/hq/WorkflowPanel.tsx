@@ -11,7 +11,7 @@ import { agentFetch, agentJson } from "@/lib/agents/client";
 import type { Run, RunDetail } from "@/lib/agents/contracts";
 import { DEMO_MODE } from "@/lib/demo";
 
-type Stage = { slug: string; title: string; response?: string; status: "pending" | "running" | "completed" | "failed" };
+type Stage = { slug: string; title: string; response?: string; status: "pending" | "running" | "completed" | "failed" | "awaiting_approval" };
 const MAX_AGENT_CALLS = 2;
 
 // Route by deterministic, zero-token rules. Nothing runs until the user presses Execute.
@@ -53,9 +53,9 @@ async function streamAgent(id: string, signal: AbortSignal) {
     }
   }
   const detail = await agentJson<RunDetail>("runs/" + id);
-  if (detail.run.status !== "completed" || !detail.run.response.trim())
+  if (!["completed", "awaiting_approval"].includes(detail.run.status) || !detail.run.response.trim())
     throw new Error(failed || detail.run.error_code || "AGENT_NOT_COMPLETED");
-  return detail.run.response;
+  return { response: detail.run.response, status: detail.run.status };
 }
 
 function LiveWorkflowPanel() {
@@ -115,11 +115,20 @@ function LiveWorkflowPanel() {
             requestId: task.id,
           });
           currentRun.current = run.id;
-          const response = run.status === "queued" ? await streamAgent(run.id, controller.signal)
-            : (await agentJson<RunDetail>("runs/" + run.id)).run.response;
+          const completed = run.status === "queued" ? await streamAgent(run.id, controller.signal)
+            : await agentJson<RunDetail>("runs/" + run.id).then((detail) => ({
+                response: detail.run.response, status: detail.run.status,
+              }));
           if (controller.signal.aborted) throw new Error("WORKFLOW_CANCELLED");
-          if (!response?.trim()) throw new Error("EMPTY_AGENT_RESULT");
+          if (!completed.response?.trim()) throw new Error("EMPTY_AGENT_RESULT");
+          const response = completed.response;
           previous = response;
+          if (completed.status === "awaiting_approval") {
+            setStages((value) => value.map((x, n) => n === i ? { ...x, status: "awaiting_approval", response } : x));
+            await supabase.from("agent_requests").update({ status: "pendente" }).eq("id", task.id);
+            setError("Etapa aguardando aprovação. Abra o histórico do agente " + stage.slug + " para revisar; o fluxo não executará outras etapas antes disso.");
+            break;
+          }
           const { error: statusError } = await supabase.from("agent_requests")
             .update({ status: "concluido" }).eq("id", task.id);
           if (statusError) throw new Error(statusError.message);
@@ -173,7 +182,7 @@ function LiveWorkflowPanel() {
       {stages.map((stage, index) => <li key={index} className="rounded-xl border p-3 text-sm">
         <div className="flex items-center justify-between gap-2">
           <strong>{index + 1}. {stage.title}</strong>
-          <span className="text-xs text-muted-foreground">{stage.status === "completed" ? "Concluída" : stage.status === "running" ? "Executando…" : stage.status === "failed" ? "Falhou" : "Na fila"}</span>
+          <span className="text-xs text-muted-foreground">{stage.status === "completed" ? "Concluída" : stage.status === "running" ? "Executando…" : stage.status === "failed" ? "Falhou" : stage.status === "awaiting_approval" ? "Aguardando aprovação" : "Na fila"}</span>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">{stage.slug}</p>
         {stage.response && <div className="mt-2 max-h-72 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-3">{stage.response}</div>}
