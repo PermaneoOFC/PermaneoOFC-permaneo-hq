@@ -70,7 +70,7 @@ export async function handleAgents(request: Request): Promise<Response> {
         const input = createRunInput.parse(await body(request));
         if (!isAgentSlug(input.agentSlug)) throw new ApiError(400, "UNKNOWN_AGENT");
         const config = limits(),
-          model = await modelConfiguration(config);
+          model = await modelConfiguration(config, input.agentSlug);
         const { data, error } = await admin.rpc("reserve_agent_run", {
           p_user: actor.id,
           p_slug: input.agentSlug,
@@ -112,7 +112,7 @@ export async function handleAgents(request: Request): Promise<Response> {
       if (request.method === "POST" && path.length === 3 && path[2] === "execute") {
         if (!isAgentSlug(run.agent_slug)) throw new ApiError(400, "UNKNOWN_AGENT");
         const config = limits(),
-          model = await modelConfiguration(config);
+          model = await modelConfiguration(config, run.agent_slug);
         if (
           model.model !== run.model ||
           model.reserve > Number(run.reserved_usd) ||
