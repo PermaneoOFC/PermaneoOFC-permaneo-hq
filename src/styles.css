@@ -233,3 +233,33 @@
 @media (max-width:767px) { .floor-viewport { display:block; } .floor-svg { max-height:none; } }
 @media (prefers-reduced-motion:reduce) { .floor-svg,.floor-person { transition:none; } }
 
+
+
+/* Illustrated HQ landing and personal studios — scoped to these screens. */
+.home-page {
+  --background:#101f26; --foreground:#e8eee9; --card:#192c34;
+  --border:#31454c; --primary:#75d5c2; --primary-foreground:#10292b;
+  --muted-foreground:#a0b4b8; --secondary:#233c43;
+  background:radial-gradient(ellipse at 80% 10%,#20434b 0,transparent 40%),#101f26;
+}
+.home-page header { border-bottom:1px solid #ffffff12; }
+.home-team-feature { background:linear-gradient(120deg,#243d44,#182d34); }
+.agent-directory-card { transition:border-color .2s,transform .2s; }
+.agent-directory-card:hover { border-color:var(--primary); transform:translateY(-3px); }
+.studio-scene { box-shadow:inset 0 0 70px #0004; }
+.studio-scene svg { pointer-events:none; }
+.studio-stage { background:#233941; }
+.studio-stage > svg { display:block; min-height:0; }
+.studio-avatar { position:absolute; left:44%; top:48%; width:12%; }
+.studio-avatar .agent-portrait { width:100%!important; height:auto!important; }
+.studio-avatar svg { min-height:0; }
+.studio-avatar svg > rect:first-child { fill:transparent; }
+.studio-avatar svg > path:nth-child(2) { opacity:0; }
+.studio-avatar .agent-portrait > span { display:none; }
+.studio-light { animation:studio-pulse 4s ease-in-out infinite alternate; }
+@keyframes studio-pulse { to { opacity:.45; transform:scale(1.15); } }
+@media (max-width:767px) { .studio-stage svg { min-height:230px; } }
+@media (prefers-reduced-motion:reduce) {
+  .studio-light { animation:none; }
+  .agent-directory-card { transition:none; }
+}
