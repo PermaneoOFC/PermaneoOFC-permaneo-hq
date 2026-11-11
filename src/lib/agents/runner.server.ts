@@ -54,6 +54,11 @@ export async function executeRun(options: {
       instructions,
       tools: options.tools,
       maxOutputTokens: limits.outputTokens,
+      // GPT-5 nano can spend the whole token budget on internal reasoning.
+      // Keep reasoning minimal so short agent tasks return visible text.
+      ...(run.model.startsWith("openai/gpt-5")
+        ? { providerOptions: { openai: { reasoningEffort: "minimal" } } }
+        : {}),
       maxRetries: 0,
       stopWhen: stepCountIs(limits.steps),
       prepareStep: async ({ messages, stepNumber }) => {
