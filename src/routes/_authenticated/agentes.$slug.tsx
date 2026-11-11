@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { AgentConsole } from "@/components/hq/AgentConsole";
 import { DEMO_MODE } from "@/lib/demo";
 import { AgentStudio } from "@/components/hq/AgentStudio";
+import { WorkflowPanel } from "@/components/hq/WorkflowPanel";
 
 export const Route = createFileRoute("/_authenticated/agentes/$slug")({
   head: () => ({
@@ -57,6 +58,7 @@ function Page() {
           </>
         }
       />
+      {a.slug === "project-manager" && <div className="mb-6"><WorkflowPanel /></div>}
       <AgentStudio agent={a} />
       <AgentConsole slug={a.slug} />
       <div className="grid gap-6 lg:grid-cols-3">
