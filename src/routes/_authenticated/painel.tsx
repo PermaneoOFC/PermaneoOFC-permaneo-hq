@@ -11,6 +11,7 @@ import {
 import { DEMO_MODE } from "@/lib/demo";
 import { PageHeader, Panel, Stat, Empty, Pill } from "@/components/hq/ui";
 import { OfficeMap } from "@/components/hq/OfficeMap";
+import { WorkflowPanel } from "@/components/hq/WorkflowPanel";
 
 export const Route = createFileRoute("/_authenticated/painel")({
   head: () => ({
@@ -56,6 +57,7 @@ function Page() {
           </Pill>
         )}
       </div>
+      <div className="mb-7"><WorkflowPanel /></div>
       <section
         aria-label="Resumo do escritório"
         className="mb-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
