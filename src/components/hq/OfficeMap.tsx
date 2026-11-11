@@ -90,11 +90,13 @@ export function OfficeMap({
   selected,
   onSelect,
   queue = {},
+  publicView = false,
 }: {
   agents: Agent[];
   selected?: string | null;
   onSelect?: (room: string) => void;
   queue?: Record<string, number>;
+  publicView?: boolean;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; left: number; moved: boolean; id: number } | null>(null);
@@ -433,7 +435,7 @@ export function OfficeMap({
                       data-agent-link="true"
                     >
                       <Link
-                        to="/agentes/$slug"
+                        to={publicView ? "/explorar/$slug" : "/agentes/$slug"}
                         params={{ slug: agent.slug }}
                         className="floor-person"
                         onClick={(e) => e.stopPropagation()}
@@ -518,7 +520,7 @@ export function OfficeMap({
             {selectedAgents.map((agent) => (
               <Link
                 key={agent.id}
-                to="/agentes/$slug"
+                to={publicView ? "/explorar/$slug" : "/agentes/$slug"}
                 params={{ slug: agent.slug }}
                 className="group flex min-w-0 items-center gap-2 rounded-md border bg-background p-2 transition hover:border-primary/50 focus-visible:outline-2 focus-visible:outline-ring"
               >
