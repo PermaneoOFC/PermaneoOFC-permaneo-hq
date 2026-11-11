@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireSupabaseAuth } from "@/lib/auth-middleware";
 
 // Board id from the official URL https://trello.com/b/IfYN7SWi/demo-day
 const DEFAULT_BOARD = "IfYN7SWi";
@@ -8,7 +8,7 @@ function creds() {
   const key = process.env["TRELLO_API_KEY"];
   const token = process.env["TRELLO_TOKEN"];
   const board = process.env["TRELLO_BOARD_ID"] || DEFAULT_BOARD;
-  return { key, token, board, configured: Boolean(key && token) };
+  return { key, token, board, configured: process.env["HQ_TRELLO_ENABLED"] === "true" && Boolean(key && token) };
 }
 
 export const getTrelloStatus = createServerFn({ method: "GET" })
@@ -31,7 +31,8 @@ export const syncTrello = createServerFn({ method: "POST" })
     const { data: canEdit } = await context.supabase.rpc("can_edit", { _user_id: context.userId });
     if (!canEdit) throw new Error("Sem permissão para sincronizar.");
     const c = creds();
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { adminDatabase } = await import("@/lib/agents/store.server");
+    const supabaseAdmin = adminDatabase();
     const log = async (status: string, message: string, items = 0) =>
       supabaseAdmin.from("sync_logs").insert({
         integration: "trello", status, message, items_count: items, triggered_by: context.userId,
@@ -43,14 +44,14 @@ export const syncTrello = createServerFn({ method: "POST" })
     const auth = `key=${encodeURIComponent(c.key!)}&token=${encodeURIComponent(c.token!)}`;
     const base = `https://api.trello.com/1/boards/${c.board}`;
     const [lr, cr] = await Promise.all([
-      fetch(`${base}/lists?filter=open&${auth}`),
-      fetch(`${base}/cards?filter=open&fields=name,desc,idList,url,due,closed,labels&${auth}`),
+      fetch(`${base}/lists?filter=open&${auth}`, { signal: AbortSignal.timeout(10000) }),
+      fetch(`${base}/cards?filter=open&fields=name,desc,idList,url,due,closed,labels&${auth}`, { signal: AbortSignal.timeout(10000) }),
     ]);
     if (!lr.ok || !cr.ok) {
-      const body = !lr.ok ? await lr.text() : await cr.text();
+
       const status = !lr.ok ? lr.status : cr.status;
-      await log("erro", `Trello respondeu ${status}: ${body.slice(0, 200)}`);
-      return { ok: false as const, error: `Trello respondeu ${status}: ${body.slice(0, 200)}` };
+      await log("erro", `Trello respondeu ${status}`);
+      return { ok: false as const, error: `Trello respondeu ${status}` };
     }
     const lists = (await lr.json()) as TrelloList[];
     const cards = (await cr.json()) as TrelloCard[];

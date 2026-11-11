@@ -1,13 +1,14 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
+import { supabase } from "@/lib/supabase";
+import { DEMO_MODE } from "@/lib/demo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/auth")({
+  beforeLoad: () => { if (DEMO_MODE) throw redirect({ to: "/painel" }); },
   head: () => ({
     meta: [
       { title: "Entrar — Permaneo HQ" },
@@ -25,6 +26,17 @@ function AuthPage() {
   const [pending, setPending] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (DEMO_MODE) return;
+    void (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return;
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
+      if (roles?.length) navigate({ to: "/painel" });
+      else setPending(true);
+    })();
+  }, [navigate]);
+
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -33,30 +45,28 @@ function AuthPage() {
     if (mode === "in") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       setBusy(false);
-      if (error) return toast.error(error.message);
+      if (error) { toast.error(error.message); return; }
       const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return toast.error("Não foi possível confirmar a conta.");
+      if (!userData.user) { toast.error("Não foi possível confirmar a conta."); return; }
       const { data: memberRoles, error: roleError } = await supabase.from("user_roles").select("role").eq("user_id", userData.user.id);
-      if (roleError) return toast.error("Não foi possível verificar seu acesso.");
+      if (roleError) { toast.error("Não foi possível verificar seu acesso."); return; }
       if (!memberRoles?.length) { setPending(true); return; }
       navigate({ to: "/painel" });
     } else {
       const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
       setBusy(false);
-      if (error) return toast.error(error.message);
+      if (error) { toast.error(error.message); return; }
       toast.success("Conta criada. Confirme seu e-mail e aguarde a aprovação do administrador.");
       setMode("in");
     }
   }
 
   async function google() {
-    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (r.error) return toast.error(String(r.error.message ?? r.error));
-    if (r.redirected) return;
-    const { data } = await supabase.auth.getUser();
-    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user?.id ?? "");
-    if (!roles?.length) { setPending(true); return; }
-    navigate({ to: "/painel" });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin + "/auth" },
+    });
+    if (error) toast.error(error.message);
   }
 
   return (

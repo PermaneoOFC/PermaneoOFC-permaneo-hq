@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { Panel, Pill } from "@/components/hq/ui";
 import { Button } from "@/components/ui/button";
 
@@ -51,7 +51,7 @@ export function TeamAccessPanel() {
       ) : members.isLoading ? (
         <p className="text-sm">Carregando integrantes…</p>
       ) : members.error ? (
-        <p role="alert" className="text-sm text-destructive">Não foi possível carregar a equipe. Verifique se a migração 0001_team_approval.sql já foi aplicada ao banco.</p>
+        <p role="alert" className="text-sm text-destructive">Não foi possível carregar a equipe. Verifique as migrations do Supabase próprio.</p>
       ) : (
         <div className="space-y-3">
           {(members.data ?? []).map((member) => (

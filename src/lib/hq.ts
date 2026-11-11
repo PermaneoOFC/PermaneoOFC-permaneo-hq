@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import type { Database } from "@/integrations/supabase/types";
+import { DEMO_MODE, demoAgents } from "@/lib/demo";
 
 export type Agent = Database["public"]["Tables"]["agents"]["Row"];
 export type AgentRequest = Database["public"]["Tables"]["agent_requests"]["Row"];
@@ -14,25 +15,25 @@ async function q<T>(p: PromiseLike<{ data: T | null; error: { message: string } 
 
 export const agentsQuery = queryOptions({
   queryKey: ["agents"],
-  queryFn: () => q(supabase.from("agents").select("*").order("sort_order")),
+  queryFn: () => DEMO_MODE ? Promise.resolve(demoAgents) : q(supabase.from("agents").select("*").order("sort_order")),
 });
 export const requestsQuery = queryOptions({
   queryKey: ["agent_requests"],
-  queryFn: () =>
+  queryFn: () => DEMO_MODE ? Promise.resolve([] as AgentRequest[]) :
     q(supabase.from("agent_requests").select("*").order("created_at", { ascending: false })),
 });
 export const tasksQuery = queryOptions({
   queryKey: ["mirrored_tasks"],
-  queryFn: () => q(supabase.from("mirrored_tasks").select("*").order("list_name")),
+  queryFn: () => DEMO_MODE ? Promise.resolve([] as MirroredTask[]) : q(supabase.from("mirrored_tasks").select("*").order("list_name")),
 });
 export const syncLogsQuery = queryOptions({
   queryKey: ["sync_logs"],
-  queryFn: () =>
+  queryFn: () => DEMO_MODE ? Promise.resolve([] as Database["public"]["Tables"]["sync_logs"]["Row"][]) :
     q(supabase.from("sync_logs").select("*").order("created_at", { ascending: false }).limit(20)),
 });
 export const auditQuery = queryOptions({
   queryKey: ["audit_log"],
-  queryFn: () =>
+  queryFn: () => DEMO_MODE ? Promise.resolve([] as Database["public"]["Tables"]["audit_log"]["Row"][]) :
     q(supabase.from("audit_log").select("*").order("created_at", { ascending: false }).limit(30)),
 });
 

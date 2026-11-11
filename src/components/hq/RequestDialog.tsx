@@ -2,24 +2,28 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Agent } from "@/lib/hq";
+import { useAuth } from "@/hooks/use-auth";
+import { DEMO_MODE } from "@/lib/demo";
 
 export function RequestDialog({ agent, trigger }: { agent: Agent; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const qc = useQueryClient();
+  const { canEdit } = useAuth();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (DEMO_MODE) return;
     const f = new FormData(e.currentTarget);
     const title = String(f.get("title") || "").trim();
-    if (!title) return toast.error("Informe um título.");
+    if (!title) { toast.error("Informe um título."); return; }
     setSaving(true);
     const { data: u } = await supabase.auth.getUser();
     const { error } = await supabase.from("agent_requests").insert({
@@ -28,15 +32,17 @@ export function RequestDialog({ agent, trigger }: { agent: Agent; trigger?: Reac
       requester_email: u.user?.email ?? null,
     });
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Solicitação registrada na fila. Nenhuma IA foi executada.");
     qc.invalidateQueries({ queryKey: ["agent_requests"] });
     setOpen(false);
   }
 
+  if (DEMO_MODE) return null;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger ?? <Button><Send /> Solicitar tarefa</Button>}</DialogTrigger>
+      <DialogTrigger asChild>{trigger ?? <Button disabled={!canEdit} title={!canEdit ? "Apenas editores podem registrar tarefas" : undefined}><Send /> Solicitar tarefa</Button>}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Solicitar tarefa · {agent.name}</DialogTitle>

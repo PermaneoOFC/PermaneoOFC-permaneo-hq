@@ -18,6 +18,7 @@ import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedTarefasRouteImport } from './routes/_authenticated/tarefas'
 import { Route as AuthenticatedAgentesIndexRouteImport } from './routes/_authenticated/agentes.index'
 import { Route as AuthenticatedAgentesSlugRouteImport } from './routes/_authenticated/agentes.$slug'
+import { Route as ApiAgentsSplatRouteImport } from './routes/api.agents.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -66,6 +67,11 @@ const AuthenticatedAgentesSlugRoute =
     path: '/agentes/$slug',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiAgentsSplatRoute = ApiAgentsSplatRouteImport.update({
+  id: '/api/agents/$',
+  path: '/api/agents/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/painel': typeof AuthenticatedPainelRoute
   '/tarefas': typeof AuthenticatedTarefasRoute
   '/agentes/$slug': typeof AuthenticatedAgentesSlugRoute
+  '/api/agents/$': typeof ApiAgentsSplatRoute
   '/agentes/': typeof AuthenticatedAgentesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/painel': typeof AuthenticatedPainelRoute
   '/tarefas': typeof AuthenticatedTarefasRoute
   '/agentes/$slug': typeof AuthenticatedAgentesSlugRoute
+  '/api/agents/$': typeof ApiAgentsSplatRoute
   '/agentes': typeof AuthenticatedAgentesIndexRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/tarefas': typeof AuthenticatedTarefasRoute
   '/_authenticated/agentes/$slug': typeof AuthenticatedAgentesSlugRoute
+  '/api/agents/$': typeof ApiAgentsSplatRoute
   '/_authenticated/agentes/': typeof AuthenticatedAgentesIndexRoute
 }
 export interface FileRouteTypes {
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/tarefas'
     | '/agentes/$slug'
+    | '/api/agents/$'
     | '/agentes/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/tarefas'
     | '/agentes/$slug'
+    | '/api/agents/$'
     | '/agentes'
   id:
     | '__root__'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel'
     | '/_authenticated/tarefas'
     | '/_authenticated/agentes/$slug'
+    | '/api/agents/$'
     | '/_authenticated/agentes/'
   fileRoutesById: FileRoutesById
 }
@@ -137,6 +149,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiAgentsSplatRoute: typeof ApiAgentsSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -204,6 +217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAgentesSlugRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/agents/$': {
+      id: '/api/agents/$'
+      path: '/api/agents/$'
+      fullPath: '/api/agents/$'
+      preLoaderRoute: typeof ApiAgentsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -232,6 +252,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiAgentsSplatRoute: ApiAgentsSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
