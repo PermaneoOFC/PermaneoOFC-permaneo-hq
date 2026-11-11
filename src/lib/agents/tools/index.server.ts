@@ -6,6 +6,7 @@ import { agentCatalog, type AgentSlug } from "../catalog";
 import { ApiError, type Run } from "../contracts";
 import { checkDatabase } from "../store.server";
 import { breakEvenSchools } from "@/lib/finance";
+import { githubOverview, vercelOverview } from "@/lib/office-integrations.server";
 
 export function buildTools(
   slug: AgentSlug,
@@ -108,6 +109,16 @@ export function buildTools(
           return { status: "created", location: "permaneo_hq_only", documentId: data?.id };
         }),
     }),
+    github_repository: tool({
+      description: "Consultar metadados atuais e commit da branch de Preview do repositório oficial GitHub. Somente leitura; se não houver acesso, informar a lacuna.",
+      inputSchema: z.object({}).strict(),
+      execute: async () => audited("github_repository", githubOverview),
+    }),
+    vercel_deployments: tool({
+      description: "Consultar status atual do projeto Permaneo HQ na Vercel se VERCEL_API_TOKEN estiver autorizado. Somente leitura; nunca publicar.",
+      inputSchema: z.object({}).strict(),
+      execute: async () => audited("vercel_deployments", vercelOverview),
+    }),
     financial_scenario: tool({
       description:
         "Calcular receita mensal e ponto de equilíbrio exclusivamente com premissas informadas; não consulta valores de mercado.",
@@ -131,7 +142,7 @@ export function buildTools(
         "Registrar proposta para revisão humana. NÃO executa ação externa, mesmo depois da aprovação.",
       inputSchema: z
         .object({
-          service: z.enum(["trello", "google_drive", "github", "vercel"]),
+          service: z.enum(["trello", "google_drive", "github", "vercel", "linkedin"]),
           action: z.string().min(1).max(100),
           proposal: z.string().min(1).max(2000),
         })
