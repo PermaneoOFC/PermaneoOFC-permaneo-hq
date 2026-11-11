@@ -154,7 +154,8 @@ function AuthenticatedConsole({ slug }: { slug: string }) {
         "approvals/" + approvalId + "/apply", {},
       );
       setError(result.executed
-        ? result.service === "github" ? "Issue criada no GitHub: " + (result.resultUrl ?? "confira o repositório")
+        ? result.service === "vercel" ? "Deploy Preview criado na Vercel: " + (result.resultUrl ?? "confira os deploys")
+        : result.service === "github" ? "Issue criada no GitHub: " + (result.resultUrl ?? "confira o repositório")
         : result.service === "google_drive"
           ? "Documento criado no Google Drive: " + (result.resultUrl ?? "confira os documentos do HQ")
           : "Ação aplicada no Trello. Consulte o quadro oficial."
@@ -309,7 +310,13 @@ function AuthenticatedConsole({ slug }: { slug: string }) {
                       Criar issue aprovada no GitHub
                     </Button>
                   )}
-                {approval.status === "approved" && !["trello", "google_drive", "github"].includes(approval.service) &&
+                {approval.status === "approved" && approval.service === "vercel" &&
+                  approval.action === "redeploy_preview" && owns && canEdit && (
+                    <Button size="sm" variant="outline" onClick={() => void applyExternal(approval.id)}>
+                      Publicar Preview aprovada na Vercel
+                    </Button>
+                  )}
+                {approval.status === "approved" && !["trello", "google_drive", "github", "vercel"].includes(approval.service) &&
                   <p className="text-xs text-muted-foreground">Esta integração ainda exige autorização externa; aprovação apenas registra a decisão.</p>}
 
                 {approval.status === "pending" &&
