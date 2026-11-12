@@ -58,22 +58,42 @@ function Index() {
             </span>
           </div>
         </div>
-        <figure className="overflow-hidden rounded-xl border border-white/10 bg-[#1b343b] shadow-lg">
-          <div className="bg-gradient-to-br from-[#1a3039] via-[#23545d] to-[#18433f] px-6 py-8 sm:px-8">
-            <p className="text-xs font-semibold uppercase tracking-[.18em] text-[#a8e0ed]">Nosso escritório, nossa equipe</p>
-            <h2 className="mt-3 mb-6 text-2xl font-bold text-white">Avatares que representam 14 especialidades.</h2>
-            <div className="grid grid-cols-4 gap-3">
+        <figure className="overflow-hidden rounded-xl border bg-card shadow-lg">
+          <div className="relative overflow-hidden bg-[#1b343b]">
+            <img
+              src="https://raw.githubusercontent.com/PermaneoOFC/PermaneoOFC-permaneo-hq/deee7aabae8b04a409d8de043fd54cd29cb24506/public/permaeo-building.png"
+              alt="Imagem original da sede ilustrada do Permaneo HQ"
+              className="aspect-[1.25] w-full object-cover"
+              loading="eager"
+              fetchPriority="high"
+            />
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#102b34]/90 via-[#102b34]/40 to-transparent p-5 pt-14">
+              <p className="text-xs font-semibold uppercase tracking-[.2em] text-[#a8e0ed]">Nossa sede virtual</p>
+              <h2 className="mt-1 font-display text-2xl font-bold text-white">Um escritório feito para construir o futuro da educação.</h2>
+            </div>
+          </div>
+          <div className="border-t bg-[#1b343b] px-4 py-4 sm:px-5">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-[#d4efed]">Conheça os agentes da equipe</p>
+              <span className="text-xs text-[#a8e0ed]">14 especialidades</span>
+            </div>
+            <div className="grid grid-cols-8 gap-1.5 sm:gap-2">
               {agents.slice(0, 8).map((agent) => (
-                <div key={agent.id} className="flex flex-col items-center rounded-lg border border-white/10 bg-white/10 p-2 text-center">
-                  <AgentAvatar agent={agent} size="md" />
-                  <span className="mt-2 line-clamp-2 text-[10px] leading-tight text-white">{agent.name}</span>
-                </div>
+                <Link
+                  key={agent.id}
+                  to="/agentes/$slug"
+                  params={{ slug: agent.slug }}
+                  className="flex min-w-0 flex-col items-center rounded-md bg-white/10 p-1.5 transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-[#a8e0ed]"
+                  title={agent.name}
+                  aria-label={"Ver agente " + agent.name}
+                >
+                  <AgentAvatar agent={agent} size="sm" />
+                </Link>
               ))}
             </div>
-            <p className="mt-6 text-xs text-[#d3e6e5]">Conheça os agentes no andar virtual abaixo.</p>
           </div>
-          <figcaption className="flex items-center justify-between gap-2 p-4 text-sm">
-            <span>Permaneo · escritório criativo</span>
+          <figcaption className="flex items-center justify-between gap-2 px-5 py-3 text-sm">
+            <span>Permaneo HQ · escritório criativo</span>
             <span className="text-muted-foreground">Demo Day</span>
           </figcaption>
         </figure>
